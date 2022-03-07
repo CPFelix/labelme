@@ -68,6 +68,9 @@ class MainWindow(QtWidgets.QMainWindow):
             config = get_config()
         self._config = config
 
+        # 当前标注进度
+        self.schedule = ""
+
         # set default shape colors
         Shape.line_color = QtGui.QColor(*self._config["shape"]["line_color"])
         Shape.fill_color = QtGui.QColor(*self._config["shape"]["fill_color"])
@@ -296,7 +299,7 @@ class MainWindow(QtWidgets.QMainWindow):
             text="Save With Image Data",
             slot=self.enableSaveImageWithData,
             tip="Save image data in label file",
-            checkable=True,
+            checkable=False,
             checked=self._config["store_data"],
         )
 
@@ -880,6 +883,8 @@ class MainWindow(QtWidgets.QMainWindow):
         title = __appname__
         if self.filename is not None:
             title = "{} - {}*".format(title, self.filename)
+            # # 增加标注进度显示
+            # title = "{} - {} test *".format(title, self.filename)
         self.setWindowTitle(title)
 
     def setClean(self):
@@ -893,7 +898,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.createLineStripMode.setEnabled(True)
         title = __appname__
         if self.filename is not None:
-            title = "{} - {}".format(title, self.filename)
+            # title = "{} - {}".format(title, self.filename)
+            # 显示标注进度
+            currIndex = self.imageList.index(self.filename)
+            self.schedule = str(currIndex + 1) + " % " + str(len(self.imageList))
+            title = "{} - {} - {}".format(title, self.filename, self.schedule)
         self.setWindowTitle(title)
 
         if self.hasLabelFile():
@@ -1701,6 +1710,8 @@ class MainWindow(QtWidgets.QMainWindow):
         currIndex = self.imageList.index(self.filename)
         if currIndex - 1 >= 0:
             filename = self.imageList[currIndex - 1]
+            # # 显示标注进度
+            # self.schedule = str(currIndex + 1) + " % " + str(len(self.imageList))
             if filename:
                 self.loadFile(filename)
 
@@ -1722,12 +1733,18 @@ class MainWindow(QtWidgets.QMainWindow):
         filename = None
         if self.filename is None:
             filename = self.imageList[0]
+            # # 显示标注进度
+            # self.schedule = "1 % " + str(len(self.imageList))
         else:
             currIndex = self.imageList.index(self.filename)
             if currIndex + 1 < len(self.imageList):
                 filename = self.imageList[currIndex + 1]
+                # # 显示标注进度
+                # self.schedule = str(currIndex + 1) + " % " + str(len(self.imageList))
             else:
                 filename = self.imageList[-1]
+                # # 显示标注进度
+                # self.schedule = str(len(self.imageList)) + " % " + str(len(self.imageList))
         self.filename = filename
 
         if self.filename and load:
@@ -1948,15 +1965,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 for action in self.actions.onShapesPresent:
                     action.setEnabled(False)
 
+    # def deleteSelectedShape(self):
+    #     yes, no = QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No
+    #     msg = self.tr(
+    #         "You are about to permanently delete {} polygons, "
+    #         "proceed anyway?"
+    #     ).format(len(self.canvas.selectedShapes))
+    #     if yes == QtWidgets.QMessageBox.warning(
+    #         self, self.tr("Attention"), msg, yes | no, yes
+    #     ):
+    #         self.remLabels(self.canvas.deleteSelected())
+    #         self.setDirty()
+    #         if self.noShapes():
+    #             for action in self.actions.onShapesPresent:
+    #                 action.setEnabled(False)
     def deleteSelectedShape(self):
         yes, no = QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No
-        msg = self.tr(
-            "You are about to permanently delete {} polygons, "
-            "proceed anyway?"
-        ).format(len(self.canvas.selectedShapes))
-        if yes == QtWidgets.QMessageBox.warning(
-            self, self.tr("Attention"), msg, yes | no, yes
-        ):
+        if yes:
             self.remLabels(self.canvas.deleteSelected())
             self.setDirty()
             if self.noShapes():
